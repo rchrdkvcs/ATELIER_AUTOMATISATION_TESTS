@@ -30,6 +30,27 @@
         background: #f3f4f6;
         border-color: #9ca3af;
       }
+      .run-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #1f2937;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+      }
+      .run-button:hover {
+        background: #f3f4f6;
+      }
+      .run-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .cards { display: grid; gap: 20px; }
       table { width: 100%; border-collapse: collapse; margin-top: 14px; }
       th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
       th { background: #f8fafc; color: #374151; font-weight: 700; }
@@ -40,6 +61,41 @@
       .badge { display: inline-flex; gap: 6px; align-items: center; padding: 8px 12px; border-radius: 999px; background: #f3f4f6; font-size: 0.95rem; font-weight: 700; }
       .badge.up { color: #047857; }
       .badge.degraded { color: #b91c1c; }
+      .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(255,255,255,0.86);
+        backdrop-filter: blur(3px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+      }
+      .loading-overlay.hidden {
+        display: none;
+      }
+      .loading-card {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 24px 30px;
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 14px 30px rgba(15,23,42,0.12);
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #d1d5db;
+        border-top-color: #374151;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
       @media (max-width: 740px) {
         .hero { flex-direction: column; }
         .top-links { width: 100%; }
@@ -54,12 +110,20 @@
           <p>Tests automatisés de l’API <strong>Agify</strong> avec historique SQLite, QoS et statut santé.</p>
         </div>
         <div class="top-links">
-          <a href="/run">Exécuter un run</a>
+          <button id="runButton" class="run-button">Exécuter un run</button>
           <a href="/health">/health</a>
           <a href="/runs.json">Télécharger JSON</a>
         </div>
       </div>
 
+      <div id="loadingOverlay" class="loading-overlay hidden" aria-live="polite">
+        <div class="loading-card">
+          <div class="spinner"></div>
+          <div>Exécution des tests en cours…</div>
+        </div>
+      </div>
+
+      <div class="cards">
       {% if latest %}
       <div class="card">
         <h2>Dernier run</h2>
@@ -152,5 +216,27 @@
         {% endif %}
       </div>
     </div>
+    <script>
+      const runButton = document.getElementById('runButton');
+      const overlay = document.getElementById('loadingOverlay');
+      if (runButton && overlay) {
+        runButton.addEventListener('click', async () => {
+          runButton.disabled = true;
+          overlay.classList.remove('hidden');
+          try {
+            const response = await fetch('/run', { method: 'GET' });
+            if (!response.ok) {
+              throw new Error(`Erreur ${response.status}`);
+            }
+            await response.json();
+            window.location.reload();
+          } catch (error) {
+            overlay.classList.add('hidden');
+            runButton.disabled = false;
+            alert('Échec de l’exécution du run : ' + error.message);
+          }
+        });
+      }
+    </script>
   </body>
 </html>
