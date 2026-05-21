@@ -1,13 +1,27 @@
 # API Choice
 
-- Étudiant :
-- API choisie :
-- URL base :
-- Documentation officielle / README :
-- Auth : None / API Key / OAuth
+- Étudiant : Richard KOVACS
+- API choisie : Agify
+- URL base : https://api.agify.io
+- Documentation officielle / README : https://agify.io
+- Auth : None
 - Endpoints testés :
-  - GET ...
-  - GET ...
+  - GET https://api.agify.io?name=michael
+  - GET https://api.agify.io?name=
+  - GET https://api.agify.io
+  - GET https://api.agify.io?name=123
 - Hypothèses de contrat (champs attendus, types, codes) :
+  - Le service accepte un paramètre `name` et renvoie un JSON.
+  - Réponse valide pour `name=michael` : `200 OK`, champs `name`, `age`, `count`.
+  - `Content-Type` doit être `application/json`.
+  - Le champ `name` doit être un texte, `age` doit être `int` ou `null`, `count` doit être un `int`.
+  - Requête sans `name` retourne `422` avec une clé `error`.
+  - Requête avec `name=` retourne `200` avec `name` vide, `age null`, `count 0`.
+  - Requête avec un nom numérique est acceptée et renvoie `name` comme chaîne.
 - Limites / rate limiting connu :
+  - Pas de clé requise, aucune limite documentée claire.
+  - Chargement limité à quelques requêtes par run pour respecter l’API publique.
 - Risques (instabilité, downtime, CORS, etc.) :
+  - Risque de downtime sur l’API tierce.
+  - Réponses 5xx ou 429 possibles ; le client gère retry simple et timeout strict.
+  - Pas de contrainte CORS pour l’usage backend Flask.

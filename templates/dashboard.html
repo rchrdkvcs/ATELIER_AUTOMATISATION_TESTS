@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agify API Dashboard</title>
+    <style>
+      body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 0; background: #fafbfc; color: #1f2937; }
+      .page { max-width: 980px; margin: 0 auto; padding: 28px 20px 40px; }
+      h1, h2 { margin: 0; color: #111827; }
+      h1 { font-size: 2rem; }
+      h2 { font-size: 1.2rem; margin-bottom: 12px; }
+      .hero { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; align-items: flex-start; margin-bottom: 24px; }
+      .card { background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-radius: 16px; }
+      .top-links { display: flex; flex-wrap: wrap; gap: 10px; }
+      .top-links a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #1f2937;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .top-links a:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+      }
+      table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+      th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+      th { background: #f8fafc; color: #374151; font-weight: 700; }
+      .status-pass { color: #047857; font-weight: 700; }
+      .status-fail { color: #b91c1c; font-weight: 700; }
+      .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+      .small { color: #6b7280; font-size: 0.95rem; margin: 6px 0 0; }
+      .badge { display: inline-flex; gap: 6px; align-items: center; padding: 8px 12px; border-radius: 999px; background: #f3f4f6; font-size: 0.95rem; font-weight: 700; }
+      .badge.up { color: #047857; }
+      .badge.degraded { color: #b91c1c; }
+      @media (max-width: 740px) {
+        .hero { flex-direction: column; }
+        .top-links { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="hero">
+        <div>
+          <h1>Agify API Dashboard</h1>
+          <p>Tests automatisés de l’API <strong>Agify</strong> avec historique SQLite, QoS et statut santé.</p>
+        </div>
+        <div class="top-links">
+          <a href="/run">Exécuter un run</a>
+          <a href="/health">/health</a>
+          <a href="/runs.json">Télécharger JSON</a>
+        </div>
+      </div>
+
+      {% if latest %}
+      <div class="card">
+        <h2>Dernier run</h2>
+        <div class="summary-grid">
+          <div>
+            <div class="badge {{ 'up' if latest.summary.availability == 'UP' else 'degraded' }}">{{ latest.summary.availability }}</div>
+            <p class="small">Statut de disponibilité</p>
+          </div>
+          <div>
+            <strong>{{ latest.summary.passed }}/{{ latest.summary.passed + latest.summary.failed }}</strong>
+            <p class="small">Tests passés</p>
+          </div>
+          <div>
+            <strong>{{ latest.summary.failed }}</strong>
+            <p class="small">Tests échoués</p>
+          </div>
+          <div>
+            <strong>{{ latest.summary.error_rate * 100 | round(1) }}%</strong>
+            <p class="small">Taux d'erreur</p>
+          </div>
+          <div>
+            <strong>{{ latest.summary.latency_ms_avg or '-' }} ms</strong>
+            <p class="small">Latence moyenne</p>
+          </div>
+          <div>
+            <strong>{{ latest.summary.latency_ms_p95 or '-' }} ms</strong>
+            <p class="small">P95 latence</p>
+          </div>
+        </div>
+        <p class="small">Timestamp : {{ latest.timestamp }}</p>
+      </div>
+      {% else %}
+      <div class="card">
+        <p>Aucun run enregistré pour le moment. Cliquez sur « Exécuter un run » pour démarrer les tests.</p>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <h2>Historique des runs</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Timestamp</th>
+              <th>API</th>
+              <th>Passé</th>
+              <th>Échoué</th>
+              <th>Taux erreur</th>
+              <th>Latence avg</th>
+              <th>Latence p95</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for run in runs %}
+            <tr>
+              <td>{{ run.id }}</td>
+              <td>{{ run.timestamp }}</td>
+              <td>{{ run.api }}</td>
+              <td>{{ run.summary.passed }}</td>
+              <td>{{ run.summary.failed }}</td>
+              <td>{{ (run.summary.error_rate * 100) | round(1) }}%</td>
+              <td>{{ run.summary.latency_ms_avg or '-' }} ms</td>
+              <td>{{ run.summary.latency_ms_p95 or '-' }} ms</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Détails du dernier run</h2>
+        {% if latest %}
+        <table>
+          <thead>
+            <tr><th>Test</th><th>Statut</th><th>Détails</th><th>Latence</th></tr>
+          </thead>
+          <tbody>
+            {% for test in latest.tests %}
+            <tr>
+              <td>{{ test.name }}</td>
+              <td class="status-{{ test.status|lower }}">{{ test.status }}</td>
+              <td>{{ test.details or '-' }}</td>
+              <td>{{ test.latency_ms or '-' }} ms</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p>Aucun détail de test disponible.</p>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
